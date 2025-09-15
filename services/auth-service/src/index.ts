@@ -1,6 +1,6 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express from "express";
+import express, { Request, Response } from "express";
 import { auth } from "@workspace/auth";
 import { fromNodeHeaders, toNodeHandler } from "better-auth/node";
 import dotenv from "dotenv";
@@ -34,7 +34,7 @@ app.use(cookieParser());
 
 app.get(
   "/me",
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req: Request, res: Response) => {
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
     });
@@ -51,7 +51,6 @@ app.get("/health", (req, res) => {
 });
 
 // Better-auth routes
-// app.use("/api/auth", toNodeHandler(auth));
 app.all("/{*splat}", toNodeHandler(auth));
 
 // Add error handling middleware (must be last)

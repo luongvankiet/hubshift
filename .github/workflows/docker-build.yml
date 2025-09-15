@@ -2,9 +2,9 @@ name: Build & Deploy
 
 on:
   push:
-    branches: [master, develop]
+    branches: [main, develop]
   pull_request:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
     inputs:
       force_rebuild:
@@ -28,6 +28,7 @@ jobs:
       has-frontend-changes: ${{ steps.set-matrix.outputs.has-frontend-changes }}
       changed-backend: ${{ steps.set-matrix.outputs.changed-backend }}
       changed-frontend: ${{ steps.set-matrix.outputs.changed-frontend }}
+      infrastructure-changed: ${{ steps.set-matrix.outputs.infrastructure-changed }}
 
     steps:
       - name: Checkout code
@@ -41,7 +42,7 @@ jobs:
         with:
           files_yaml: |
             auth_service:
-              - apps/auth-service/**
+              - services/auth-service/**
               - packages/api/**
               - packages/ui/**
               - packages/db/**
@@ -49,7 +50,7 @@ jobs:
               - packages/eslint-config/**
               - packages/typescript-config/**
             api_gateway:
-              - apps/api-gateway/**
+              - services/api-gateway/**
               - packages/api/**
               - packages/ui/**
               - packages/db/**
@@ -72,6 +73,12 @@ jobs:
               - packages/auth/**
               - packages/eslint-config/**
               - packages/typescript-config/**
+            infrastructure:
+              - nginx.conf
+              - docker-compose.production.yml
+              - docker-compose.dev.yml
+              - scripts/**
+              - .github/workflows/**
             shared:
               - package.json
               - pnpm-lock.yaml
@@ -95,6 +102,11 @@ jobs:
               echo "Shared files changed - building all services"
               BACKEND_SERVICES=("auth-service" "api-gateway")
               FRONTEND_SERVICES=("app" "web")
+            # Check infrastructure changes (forces deployment without rebuild)
+            elif [[ "${{ steps.changed-files.outputs.infrastructure_any_changed }}" == "true" ]]; then
+              echo "Infrastructure files changed - forcing deployment"
+              # Don't rebuild services, but force deployment
+              echo "infrastructure-changed=true" >> $GITHUB_OUTPUT
             else
               # Check individual services
               [[ "${{ steps.changed-files.outputs.auth_service_any_changed }}" == "true" ]] && BACKEND_SERVICES+=("auth-service")
@@ -179,6 +191,7 @@ jobs:
         run: |
           # Setup pnpm
           npm install -g pnpm@10.4.1
+          npm install -g turbo@2.5.5
 
           # Create .npmrc
           echo "auto-install-peers=true" > .npmrc
@@ -250,12 +263,7 @@ jobs:
   deploy-to-ec2:
     needs: [detect-changes, build-backend, build-frontend]
     runs-on: ubuntu-latest
-    if: |
-      always() && 
-      github.ref == 'refs/heads/master' && 
-      github.event_name == 'push' &&
-      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
-      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
+    if: always()
 
     steps:
       - name: Checkout code
@@ -269,19 +277,67 @@ jobs:
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
           script: |
-            # Navigate to app directory
+            # Check and install Docker if not present
+            if ! command -v docker &> /dev/null; then
+              echo "🔧 Docker not found, installing..."
+              sudo apt update -y
+              sudo apt install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -a -G docker ubuntu
+              
+              # Install Docker Compose
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              
+              # Install jq for JSON parsing
+              sudo apt install -y jq
+              
+              echo "✅ Docker installation completed!"
+            fi
+
+            # Handle Docker permissions - use sudo for Docker commands if needed
+            if ! docker info &> /dev/null 2>&1; then
+              echo "🔄 Docker permission issue detected, will use sudo for Docker commands"
+              export USE_SUDO_DOCKER=true
+              
+              # Ensure Docker service is running
+              sudo systemctl restart docker
+              sleep 5
+              
+              # Test with sudo
+              if sudo docker info &> /dev/null; then
+                echo "✅ Docker working with sudo"
+              else
+                echo "❌ Docker still not working, checking service status"
+                sudo systemctl status docker
+                exit 1
+              fi
+            else
+              echo "✅ Docker working without sudo"
+              export USE_SUDO_DOCKER=false
+            fi
+
+            # Create and navigate to app directory
+            mkdir -p /home/ubuntu/hubshift
             cd /home/ubuntu/hubshift
 
             # Configure git to use personal access token
             git config --global url."https://${{ secrets.GH_ACCESS_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
+            # Initialize git repo if not exists
+            if [ ! -d ".git" ]; then
+              git init
+              git remote add origin https://github.com/luongvankiet/hubshift.git
+            fi
+
             # Discard local changes to tracked files before pulling
-            git reset --hard HEAD
+            git reset --hard HEAD || echo "No commits yet"
             # Optionally, clean untracked files except .env
-            git clean -fd -e .env
+            git clean -fd -e .env || echo "Nothing to clean"
 
             # Pull latest code
-            git pull origin master
+            git pull origin main
 
             # Set environment variables for deployment script
             export DOCKER_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
@@ -289,9 +345,10 @@ jobs:
             # Pass only changed services to deployment script
             export CHANGED_BACKEND='${{ needs.detect-changes.outputs.changed-backend }}'
             export CHANGED_FRONTEND='${{ needs.detect-changes.outputs.changed-frontend }}'
+            export INFRASTRUCTURE_CHANGED='${{ needs.detect-changes.outputs.infrastructure-changed }}'
 
             # If no changes, deploy all (for initial deployment)
-            if [ "$CHANGED_BACKEND" == "[]" ] && [ "$CHANGED_FRONTEND" == "[]" ]; then
+            if [ "$CHANGED_BACKEND" == "[]" ] && [ "$CHANGED_FRONTEND" == "[]" ] && [ "$INFRASTRUCTURE_CHANGED" != "true" ]; then
               export CHANGED_BACKEND='["auth-service","api-gateway"]'
               export CHANGED_FRONTEND='["app","web"]'
             fi

@@ -11,20 +11,10 @@ NC='\033[0m' # No Color
 declare -A SERVICES=(
     ["api-gateway"]="8080"
     ["auth-service"]="6001"
-    # ["product-service"]="6002"
-    # ["order-service"]="6003"
-    # ["seller-service"]="6004"
-    # ["admin-service"]="6005"
-    # ["chatting-service"]="6006"
-    # ["kafka-service"]="6007"
-    # ["logger-service"]="6008"
-    # ["recommendation-service"]="6009"
 )
 
 declare -A UI_SERVICES=(
     ["app"]="3000"
-    # ["seller-ui"]="3001"
-    # ["admin-ui"]="3002"
 )
 
 # Function to print usage

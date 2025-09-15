@@ -37,7 +37,6 @@ app.get("/health", (req, res) => {
     return (0, api_1.sendHealth)(res, "healthy", uptime, "1.0.0");
 });
 // Better-auth routes
-// app.use("/api/auth", toNodeHandler(auth));
 app.all("/{*splat}", (0, node_1.toNodeHandler)(auth_1.auth));
 // Add error handling middleware (must be last)
 app.use(api_1.notFoundHandler);

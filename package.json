@@ -6,7 +6,10 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "docker:build": "bash scripts/local-production.sh --build-only",
+    "docker:run": "bash scripts/local-production.sh --run-only",
+    "docker:prod": "bash scripts/local-production.sh"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
