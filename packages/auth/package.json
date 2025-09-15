@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/auth",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "license": "MIT",
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "lint": "eslint",
+    "generate": "pnpm with-env -- pnpx @better-auth/cli generate --output ../db/src/models/auth.ts",
+    "typecheck": "tsc --noEmit",
+    "with-env": "dotenv -e ../../.env"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "@better-auth/expo": "1.2.12",
+    "better-auth": "1.2.12",
+    "dotenv-cli": "^10.0.0"
+  },
+  "devDependencies": {
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "@better-auth/cli": "1.2.12"
+  }
+}
