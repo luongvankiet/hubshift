@@ -17,5 +17,13 @@
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalEnv": [
+    "API_GATEWAY_PORT",
+    "AUTH_SERVICE_PORT",
+    "DATABASE_URL",
+    "NEXT_PUBLIC_API_GATEWAY_URL",
+    "API_GATEWAY_URL",
+    "AUTH_SERVICE_URL"
+  ]
 }

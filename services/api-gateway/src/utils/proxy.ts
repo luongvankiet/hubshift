@@ -43,7 +43,7 @@ export const getServiceUrl = (serviceName: string, port: number) => {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
-    return `http://${serviceName}.kevin-luong.com`;
+    return process.env.AUTH_SERVICE_URL;
   }
   return `http://localhost:${port}`;
 };
