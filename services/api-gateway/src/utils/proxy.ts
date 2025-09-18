@@ -43,7 +43,7 @@ export const getServiceUrl = (serviceName: string, port: number) => {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
-    return process.env.AUTH_SERVICE_URL;
+    return `https://hubshift-${serviceName}-service.vercel.app`;
   }
   return `http://localhost:${port}`;
 };
