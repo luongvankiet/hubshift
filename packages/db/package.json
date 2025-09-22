@@ -1,6 +1,7 @@
 {
   "name": "@workspace/db",
   "version": "0.0.1",
+  "type": "module",
   "dependencies": {
     "dotenv": "^17.2.1",
     "envalid": "^8.1.0",

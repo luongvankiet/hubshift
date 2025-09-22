@@ -1,8 +1,9 @@
 {
   "name": "@services/auth-service",
   "version": "0.0.1",
+  "type": "module",
   "description": "",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
   "scripts": {
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "dev": "pnpm with-env nodemon src/index.ts",
