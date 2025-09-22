@@ -8,7 +8,7 @@ import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { cleanEnv, str, port } from "envalid";
-import { createProxyMiddleware, getServiceUrl } from "./utils/proxy";
+import { createProxyMiddleware, getServiceUrl } from "./utils/proxy.js";
 
 dotenv.config();
 
