@@ -14,7 +14,20 @@
     "typescript": "^5.9.2"
   },
   "exports": {
-    "./index": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./index": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
   }
 }
